@@ -1,0 +1,38 @@
+import json
+import boto3
+
+# Initialize the AWS SDK clients
+s3_client = boto3.client('s3')
+dynamodb_client = boto3.client('dynamodb')
+
+def lambda_handler(event, context):
+    # Extract the S3 bucket and object key from the event
+    bucket = event['Records'][0]['s3']['bucket']['name']
+    object_key = event['Records'][0]['s3']['object']['key']
+    
+    # Define the DynamoDB table name
+    dynamodb_table = 'DynamoDBTableName'
+
+    try:
+        # Fetch the content of the S3 object
+        response = s3_client.get_object(Bucket=bucket, Key=object_key)
+        data = response['Body'].read().decode('utf-8')
+        
+        # Parse the JSON data (assuming the data is in JSON format)
+        parsed_data = json.loads(data)
+        
+        # Write data to DynamoDB
+        dynamodb_client.put_item(
+            TableName=dynamodb_table,
+            Item=parsed_data  # Assuming 'parsed_data' is a dictionary representing your item
+        )
+        
+        return {
+            'statusCode': 200,
+            'body': json.dumps('Data imported successfully')
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps(f'Error: {str(e)}')
+        }
